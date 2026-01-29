@@ -12,7 +12,6 @@ namespace firebase {
     //% subcategory="Firebase"
     //% block="Set Server Host %host"
     export function setHost(host: string) {
-
         serverHost = host
             .replace("http://", "")
             .replace("https://", "")
@@ -26,11 +25,9 @@ namespace firebase {
     //% subcategory="Firebase"
     //% block="Set Server Path %path"
     export function setPath(path: string) {
-
         if (path.charAt(0) != "/") {
             path = "/" + path
         }
-
         serverPath = path
     }
 
@@ -54,40 +51,40 @@ namespace firebase {
 
         uploadSuccess = false
 
+        // cek koneksi
         if (!esp8266.isWifiConnected()) return
         if (serverHost == "") return
 
-
+        // buka koneksi TCP
         if (!esp8266.sendCommand(
             "AT+CIPSTART=\"TCP\",\"" + serverHost + "\",80",
             "OK",
             5000
         )) return
 
-
+        // siapkan data
         let data = name + ":" + value
         let safeData = esp8266.formatUrl(data)
-
         let url = serverPath + "?path=iot&data=" + safeData
 
-
+        // HTTP request
         let request = "GET " + url + " HTTP/1.1\r\n"
         request += "Host: " + serverHost + "\r\n"
         request += "Connection: close\r\n\r\n"
 
-
+        // kirim request
         esp8266.sendCommand("AT+CIPSEND=" + request.length)
         esp8266.sendCommand(request)
 
+        // cek apakah data terkirim
+        if (esp8266.getResponse("SEND OK", 3000) == "") return
 
-      if (esp8266.getResponse("SEND OK", 3000) == "") return
+        // tunggu server proses
+        basic.pause(1000)
 
-basic.pause(1000)   // tunggu server proses
+        // tutup koneksi
+        esp8266.sendCommand("AT+CIPCLOSE", "OK", 1000)
 
-esp8266.sendCommand("AT+CIPCLOSE", "OK", 1000)
-
-uploadSuccess = true
-
+        uploadSuccess = true
     }
-
 }
