@@ -1,0 +1,26 @@
+# MakeCode
+built
+node_modules
+yotta_modules
+yotta_targets
+pxt_modules
+_site
+*.db
+*.tgz
+.header.json
+.simstate.json
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# IDE
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
