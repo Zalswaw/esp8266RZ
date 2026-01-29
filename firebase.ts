@@ -80,12 +80,14 @@ namespace firebase {
         esp8266.sendCommand(request)
 
 
-        if (esp8266.getResponse("SEND OK", 3000) == "") return
-        if (esp8266.getResponse("200 OK", 5000) == "") return
+      if (esp8266.getResponse("SEND OK", 3000) == "") return
 
-        esp8266.sendCommand("AT+CIPCLOSE", "OK", 1000)
+basic.pause(1000)   // tunggu server proses
 
-        uploadSuccess = true
+esp8266.sendCommand("AT+CIPCLOSE", "OK", 1000)
+
+uploadSuccess = true
+
     }
 
 }
