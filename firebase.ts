@@ -11,12 +11,14 @@ namespace firebase {
 
     //% subcategory="Firebase"
     //% block="Set Server Host %host"
-    export function setHost(host: string) {
-        serverHost = host
-            .replace("http://", "")
-            .replace("https://", "")
-            .replace("/", "")
-    }
+  export function setHost(host: string) {
+    serverHost = host
+        .replace("http://", "")
+        .replace("https://", "")
+        .replace("/", "")
+        .trim()
+}
+
 
     //============================
     // SET PATH
