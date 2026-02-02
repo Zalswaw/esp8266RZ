@@ -1,5 +1,6 @@
 let serverHost = ""
 let serverPath = "/iot.php"
+let useSSL = false  // new: pakai SSL atau tidak
 
 namespace firebase {
 
@@ -8,22 +9,28 @@ namespace firebase {
     //============================
     // SET HOST
     //============================
-
     //% subcategory="Firebase"
     //% block="Set Server Host %host"
-  export function setHost(host: string) {
-    serverHost = host
-        .replace("http://", "")
-        .replace("https://", "")
-        .replace("/", "")
-        .trim()
-}
+    export function setHost(host: string) {
+        serverHost = host
+            .replace("http://", "")
+            .replace("https://", "")
+            .replace("/", "")
+            .trim()
+    }
 
+    //============================
+    // USE SSL
+    //============================
+    //% subcategory="Firebase"
+    //% block="Use SSL %ssl"
+    export function setUseSSL(ssl: boolean) {
+        useSSL = ssl
+    }
 
     //============================
     // SET PATH
     //============================
-
     //% subcategory="Firebase"
     //% block="Set Server Path %path"
     export function setPath(path: string) {
@@ -36,7 +43,6 @@ namespace firebase {
     //============================
     // STATUS
     //============================
-
     //% subcategory="Firebase"
     //% block="Upload success"
     export function isSuccess(): boolean {
@@ -46,7 +52,6 @@ namespace firebase {
     //============================
     // SEND SENSOR
     //============================
-
     //% subcategory="Firebase"
     //% block="Send Sensor|name %name|value %value"
     export function sendSensor(name: string, value: number) {
@@ -57,9 +62,12 @@ namespace firebase {
         if (!esp8266.isWifiConnected()) return
         if (serverHost == "") return
 
-        // buka koneksi TCP
+        // buka koneksi TCP atau SSL
+        let port = useSSL ? 443 : 80
+        let proto = useSSL ? "SSL" : "TCP"
+
         if (!esp8266.sendCommand(
-            "AT+CIPSTART=\"TCP\",\"" + serverHost + "\",80",
+            "AT+CIPSTART=\"" + proto + "\",\"" + serverHost + "\"," + port,
             "OK",
             5000
         )) return
