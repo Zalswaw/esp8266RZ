@@ -50,7 +50,7 @@ namespace firebase {
     }
 
     //============================
-    // SEND SENSOR
+    // SEND SENSOR (ANGKA)
     //============================
     //% subcategory="Firebase"
     //% block="Send Sensor|name %name|value %value"
@@ -75,6 +75,55 @@ namespace firebase {
         // siapkan data
         let data = name + ":" + value
         let safeData = esp8266.formatUrl(data)
+        let url = serverPath + "?path=iot&data=" + safeData
+
+        // HTTP request
+        let request = "GET " + url + " HTTP/1.1\r\n"
+        request += "Host: " + serverHost + "\r\n"
+        request += "Connection: close\r\n\r\n"
+
+        // kirim request
+        esp8266.sendCommand("AT+CIPSEND=" + request.length)
+        esp8266.sendCommand(request)
+
+        // cek apakah data terkirim
+        if (esp8266.getResponse("SEND OK", 3000) == "") return
+
+        // tunggu server proses
+        basic.pause(1000)
+
+        // tutup koneksi
+        esp8266.sendCommand("AT+CIPCLOSE", "OK", 1000)
+
+        uploadSuccess = true
+    }
+
+    //============================
+    // SEND TEXT (UNTUK STRING / ID NFC)
+    //============================
+    //% subcategory="Firebase"
+    //% block="Send Text|name %name|value %value"
+    export function sendString(name: string, value: string) {
+
+        uploadSuccess = false
+
+        // cek koneksi
+        if (!esp8266.isWifiConnected()) return
+        if (serverHost == "") return
+
+        // buka koneksi TCP atau SSL
+        let port = useSSL ? 443 : 80
+        let proto = useSSL ? "SSL" : "TCP"
+
+        if (!esp8266.sendCommand(
+            "AT+CIPSTART=\"" + proto + "\",\"" + serverHost + "\"," + port,
+            "OK",
+            5000
+        )) return
+
+        // siapkan data
+        let data = name + ":" + value
+        let safeData = esp8266.formatUrl(data) 
         let url = serverPath + "?path=iot&data=" + safeData
 
         // HTTP request
