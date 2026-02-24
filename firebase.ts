@@ -1,6 +1,6 @@
 let serverHost = ""
 let serverPath = "/iot.php"
-let useSSL = false  // new: pakai SSL atau tidak
+let useSSL = false
 
 namespace firebase {
 
@@ -41,7 +41,7 @@ namespace firebase {
     }
 
     //============================
-    // STATUS
+    // STATUS UPLOAD
     //============================
     //% subcategory="Firebase"
     //% block="Upload success"
@@ -57,12 +57,9 @@ namespace firebase {
     export function sendSensor(name: string, value: number) {
 
         uploadSuccess = false
-
-        // cek koneksi
         if (!esp8266.isWifiConnected()) return
         if (serverHost == "") return
 
-        // buka koneksi TCP atau SSL
         let port = useSSL ? 443 : 80
         let proto = useSSL ? "SSL" : "TCP"
 
@@ -72,46 +69,36 @@ namespace firebase {
             5000
         )) return
 
-        // siapkan data
         let data = name + ":" + value
         let safeData = esp8266.formatUrl(data)
-        let url = serverPath + "?path=iot&data=" + safeData
+        let url = serverPath + "?data=" + safeData
 
-        // HTTP request
         let request = "GET " + url + " HTTP/1.1\r\n"
         request += "Host: " + serverHost + "\r\n"
         request += "Connection: close\r\n\r\n"
 
-        // kirim request
         esp8266.sendCommand("AT+CIPSEND=" + request.length)
         esp8266.sendCommand(request)
 
-        // cek apakah data terkirim
         if (esp8266.getResponse("SEND OK", 3000) == "") return
 
-        // tunggu server proses
-        basic.pause(1000)
-
-        // tutup koneksi
+        basic.pause(500)
         esp8266.sendCommand("AT+CIPCLOSE", "OK", 1000)
 
         uploadSuccess = true
     }
 
     //============================
-    // SEND TEXT (UNTUK STRING / ID NFC)
+    // SEND STRING (JSON / UID NFC)
     //============================
     //% subcategory="Firebase"
     //% block="Send Text|name %name|value %value"
     export function sendString(name: string, value: string) {
 
         uploadSuccess = false
-
-        // cek koneksi
         if (!esp8266.isWifiConnected()) return
         if (serverHost == "") return
 
-        // buka koneksi TCP atau SSL
         let port = useSSL ? 443 : 80
         let proto = useSSL ? "SSL" : "TCP"
 
@@ -121,29 +108,63 @@ namespace firebase {
             5000
         )) return
 
-        // siapkan data
         let data = name + ":" + value
-        let safeData = esp8266.formatUrl(data) 
-        let url = serverPath + "?path=iot&data=" + safeData
+        let safeData = esp8266.formatUrl(data)
+        let url = serverPath + "?data=" + safeData
 
-        // HTTP request
         let request = "GET " + url + " HTTP/1.1\r\n"
         request += "Host: " + serverHost + "\r\n"
         request += "Connection: close\r\n\r\n"
 
-        // kirim request
         esp8266.sendCommand("AT+CIPSEND=" + request.length)
         esp8266.sendCommand(request)
 
-        // cek apakah data terkirim
         if (esp8266.getResponse("SEND OK", 3000) == "") return
 
-        // tunggu server proses
-        basic.pause(1000)
-
-        // tutup koneksi
+        basic.pause(500)
         esp8266.sendCommand("AT+CIPCLOSE", "OK", 1000)
 
         uploadSuccess = true
+    }
+
+    //============================
+    // GET DATA SERVER (UNTUK RELAY / MODE / DLL)
+    //============================
+    //% subcategory="Firebase"
+    //% block="Get Data Server"
+    export function getDataServer(): number {
+
+        if (!esp8266.isWifiConnected()) return -1
+        if (serverHost == "") return -1
+
+        let port = useSSL ? 443 : 80
+        let proto = useSSL ? "SSL" : "TCP"
+
+        if (!esp8266.sendCommand(
+            "AT+CIPSTART=\"" + proto + "\",\"" + serverHost + "\"," + port,
+            "OK",
+            5000
+        )) return -1
+
+        let url = serverPath + "?relay=get"
+
+        let request = "GET " + url + " HTTP/1.1\r\n"
+        request += "Host: " + serverHost + "\r\n"
+        request += "Connection: close\r\n\r\n"
+
+        esp8266.sendCommand("AT+CIPSEND=" + request.length)
+        esp8266.sendCommand(request)
+
+        let response = esp8266.getResponse("CLOSED", 5000)
+
+        esp8266.sendCommand("AT+CIPCLOSE", "OK", 1000)
+
+        if (response.indexOf("1") >= 0) {
+            return 1
+        } else if (response.indexOf("0") >= 0) {
+            return 0
+        }
+
+        return -1
     }
 }
