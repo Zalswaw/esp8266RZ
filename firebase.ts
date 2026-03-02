@@ -128,11 +128,11 @@ namespace firebase {
     }
 
     //============================
-    // GET DATA SERVER (UNTUK RELAY / MODE / DLL)
+    // GET RELAY (1-4)
     //============================
     //% subcategory="Firebase"
-    //% block="Get Data Server"
-    export function getDataServer(): number {
+    //% block="Get Relay %relay"
+    export function getRelay(relay: number): number {
 
         if (!esp8266.isWifiConnected()) return -1
         if (serverHost == "") return -1
@@ -146,7 +146,7 @@ namespace firebase {
             5000
         )) return -1
 
-        let url = serverPath + "?relay=get"
+        let url = serverPath + "?relay=" + relay
 
         let request = "GET " + url + " HTTP/1.1\r\n"
         request += "Host: " + serverHost + "\r\n"
@@ -159,11 +159,8 @@ namespace firebase {
 
         esp8266.sendCommand("AT+CIPCLOSE", "OK", 1000)
 
-        if (response.indexOf("1") >= 0) {
-            return 1
-        } else if (response.indexOf("0") >= 0) {
-            return 0
-        }
+        if (response.indexOf("1") >= 0) return 1
+        if (response.indexOf("0") >= 0) return 0
 
         return -1
     }
