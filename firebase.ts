@@ -159,8 +159,27 @@ namespace firebase {
 
         esp8266.sendCommand("AT+CIPCLOSE", "OK", 1000)
 
-        if (response.indexOf("1") >= 0) return 1
-        if (response.indexOf("0") >= 0) return 0
+        // Temukan batas antara HTTP Headers dan HTTP Body (\r\n\r\n atau \n\n)
+        let headerIndex = response.indexOf("\r\n\r\n")
+        if (headerIndex < 0) {
+            headerIndex = response.indexOf("\n\n")
+        }
+
+        if (headerIndex >= 0) {
+            let body = response.substring(headerIndex + (response.indexOf("\r\n\r\n") >= 0 ? 4 : 2))
+            body = body.replace("CLOSED", "").trim()
+            if (body == "1") return 1
+            if (body == "0") return 0
+        } else {
+            // Fallback aman jika pembagian header gagal
+            let clean = response.replace("CLOSED", "").trim()
+            if (clean.length >= 2 && clean.substring(clean.length - 2) == "-1") {
+                return -1
+            }
+            let lastChar = clean.charAt(clean.length - 1)
+            if (lastChar == "1") return 1
+            if (lastChar == "0") return 0
+        }
 
         return -1
     }
