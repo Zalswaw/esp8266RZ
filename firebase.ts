@@ -214,41 +214,47 @@ namespace firebase {
         }
     }
 
+   //============================
+// GET RELAY
+//============================
+//% subcategory="Firebase"
+//% block="Get Relay %relay"
+export function getRelay(relay: number): number {
+
+    let url = serverPath + "?relay=" + relay
+
+    let response = httpGet(url)
+
+    // gagal koneksi
+    if (response == "") {
+
+        return -1
+    }
+
     //============================
-    // GET RELAY
+    // AMBIL KARAKTER TERAKHIR
     //============================
-    //% subcategory="Firebase"
-    //% block="Get Relay %relay"
-    export function getRelay(relay: number): number {
 
-        let url = serverPath + "?relay=" + relay
+    response = response.replace("\r", "")
+    response = response.replace("\n", "")
+    response = response.trim()
 
-        let response = httpGet(url)
+    // cari dari belakang
+    for (let i = response.length - 1; i >= 0; i--) {
 
-        // gagal koneksi
-        if (response == "") {
+        let c = response.charAt(i)
 
-            return -1
-        }
-
-        // ambil body HTTP saja
-        let body = getBody(response)
-
-        //============================
-        // CEK BODY
-        //============================
-
-        if (body.indexOf("1") >= 0) {
+        if (c == "1") {
 
             return 1
         }
 
-        if (body.indexOf("0") >= 0) {
+        if (c == "0") {
 
             return 0
         }
-
-        return -1
     }
+
+    return -1
 }
 ```
