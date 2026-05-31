@@ -12,6 +12,7 @@ namespace firebase {
     //% subcategory="Firebase"
     //% block="Set Server Host %host"
     export function setHost(host: string) {
+
         serverHost = host
             .replace("http://", "")
             .replace("https://", "")
@@ -34,9 +35,11 @@ namespace firebase {
     //% subcategory="Firebase"
     //% block="Set Server Path %path"
     export function setPath(path: string) {
+
         if (path.charAt(0) != "/") {
             path = "/" + path
         }
+
         serverPath = path
     }
 
@@ -50,117 +53,168 @@ namespace firebase {
     }
 
     //============================
-    // SEND SENSOR (ANGKA)
+    // INTERNAL HTTP REQUEST
+    //============================
+    function httpGet(url: string): string {
+
+        if (!esp8266.isWifiConnected()) {
+            return ""
+        }
+
+        if (serverHost == "") {
+            return ""
+        }
+
+        let port = useSSL ? 443 : 80
+        let proto = useSSL ? "SSL" : "TCP"
+
+        // Tutup koneksi sebelumnya
+        esp8266.sendCommand("AT+CIPCLOSE", "OK", 1000)
+
+        // Start koneksi baru
+        if (!esp8266.sendCommand(
+            "AT+CIPSTART=\"" + proto + "\",\"" + serverHost + "\"," + port,
+            "OK",
+            5000
+        )) {
+
+            return ""
+        }
+
+        let request = "GET " + url + " HTTP/1.1\r\n"
+        request += "Host: " + serverHost + "\r\n"
+        request += "Connection: close\r\n\r\n"
+
+        // Kirim panjang data
+        if (!esp8266.sendCommand(
+            "AT+CIPSEND=" + request.length,
+            ">",
+            3000
+        )) {
+
+            esp8266.sendCommand("AT+CIPCLOSE", "OK", 1000)
+            return ""
+        }
+
+        // Kirim request
+        esp8266.sendCommand(request)
+
+        // Tunggu SEND OK
+        if (esp8266.getResponse("SEND OK", 5000) == "") {
+
+            esp8266.sendCommand("AT+CIPCLOSE", "OK", 1000)
+            return ""
+        }
+
+        // Ambil response lengkap
+        let response = esp8266.getResponse("CLOSED", 8000)
+
+        esp8266.sendCommand("AT+CIPCLOSE", "OK", 1000)
+
+        return response
+    }
+
+    //============================
+    // AMBIL BODY HTTP
+    //============================
+    function getBody(response: string): string {
+
+        let body = ""
+
+        let index = response.indexOf("\r\n\r\n")
+
+        if (index >= 0) {
+
+            body = response.substr(index + 4)
+            body = body.trim()
+        }
+
+        return body
+    }
+
+    //============================
+    // SEND SENSOR NUMBER
     //============================
     //% subcategory="Firebase"
     //% block="Send Sensor|name %name|value %value"
     export function sendSensor(name: string, value: number) {
 
         uploadSuccess = false
-        if (!esp8266.isWifiConnected()) return
-        if (serverHost == "") return
-
-        let port = useSSL ? 443 : 80
-        let proto = useSSL ? "SSL" : "TCP"
-
-        if (!esp8266.sendCommand(
-            "AT+CIPSTART=\"" + proto + "\",\"" + serverHost + "\"," + port,
-            "OK",
-            5000
-        )) return
 
         let data = name + ":" + value
         let safeData = esp8266.formatUrl(data)
+
         let url = serverPath + "?data=" + safeData
 
-        let request = "GET " + url + " HTTP/1.1\r\n"
-        request += "Host: " + serverHost + "\r\n"
-        request += "Connection: close\r\n\r\n"
+        let response = httpGet(url)
 
-        esp8266.sendCommand("AT+CIPSEND=" + request.length)
-        esp8266.sendCommand(request)
+        // Validasi response
+        if (response.indexOf("200 OK") >= 0) {
 
-        if (esp8266.getResponse("SEND OK", 3000) == "") return
-
-        basic.pause(500)
-        esp8266.sendCommand("AT+CIPCLOSE", "OK", 1000)
-
-        uploadSuccess = true
+            uploadSuccess = true
+        }
     }
 
     //============================
-    // SEND STRING (JSON / UID NFC)
+    // SEND STRING
     //============================
     //% subcategory="Firebase"
     //% block="Send Text|name %name|value %value"
     export function sendString(name: string, value: string) {
 
         uploadSuccess = false
-        if (!esp8266.isWifiConnected()) return
-        if (serverHost == "") return
-
-        let port = useSSL ? 443 : 80
-        let proto = useSSL ? "SSL" : "TCP"
-
-        if (!esp8266.sendCommand(
-            "AT+CIPSTART=\"" + proto + "\",\"" + serverHost + "\"," + port,
-            "OK",
-            5000
-        )) return
 
         let data = name + ":" + value
         let safeData = esp8266.formatUrl(data)
+
         let url = serverPath + "?data=" + safeData
 
-        let request = "GET " + url + " HTTP/1.1\r\n"
-        request += "Host: " + serverHost + "\r\n"
-        request += "Connection: close\r\n\r\n"
+        let response = httpGet(url)
 
-        esp8266.sendCommand("AT+CIPSEND=" + request.length)
-        esp8266.sendCommand(request)
+        // Validasi response
+        if (response.indexOf("200 OK") >= 0) {
 
-        if (esp8266.getResponse("SEND OK", 3000) == "") return
-
-        basic.pause(500)
-        esp8266.sendCommand("AT+CIPCLOSE", "OK", 1000)
-
-        uploadSuccess = true
+            uploadSuccess = true
+        }
     }
 
     //============================
-    // GET RELAY (1-4)
+    // GET RELAY
     //============================
     //% subcategory="Firebase"
     //% block="Get Relay %relay"
     export function getRelay(relay: number): number {
 
-        if (!esp8266.isWifiConnected()) return -1
-        if (serverHost == "") return -1
-
-        let port = useSSL ? 443 : 80
-        let proto = useSSL ? "SSL" : "TCP"
-
-        if (!esp8266.sendCommand(
-            "AT+CIPSTART=\"" + proto + "\",\"" + serverHost + "\"," + port,
-            "OK",
-            5000
-        )) return -1
-
         let url = serverPath + "?relay=" + relay
 
-        let request = "GET " + url + " HTTP/1.1\r\n"
-        request += "Host: " + serverHost + "\r\n"
-        request += "Connection: close\r\n\r\n"
+        let response = httpGet(url)
 
-        esp8266.sendCommand("AT+CIPSEND=" + request.length)
-        esp8266.sendCommand(request)
+        // Jika gagal koneksi
+        if (response == "") {
+            return -1
+        }
 
-        let response = esp8266.getResponse("CLOSED", 5000)
+        // Pastikan HTTP valid
+        if (response.indexOf("200 OK") < 0) {
+            return -1
+        }
 
-        esp8266.sendCommand("AT+CIPCLOSE", "OK", 1000)
+        // Ambil body asli
+        let body = getBody(response)
 
-        if (response.indexOf("1") >= 0) return 1
-        if (response.indexOf("0") >= 0) return 0
+        // Bersihkan karakter aneh
+        body = body.replace("\r", "")
+        body = body.replace("\n", "")
+        body = body.trim()
+
+        // Parsing relay
+        if (body == "1") {
+            return 1
+        }
+
+        if (body == "0") {
+            return 0
+        }
 
         return -1
     }
