@@ -53,7 +53,7 @@ namespace firebase {
     }
 
     //============================
-    // INTERNAL HTTP REQUEST
+    // HTTP GET
     //============================
     function httpGet(url: string): string {
 
@@ -71,7 +71,12 @@ namespace firebase {
         // Tutup koneksi sebelumnya
         esp8266.sendCommand("AT+CIPCLOSE", "OK", 1000)
 
-        // Start koneksi baru
+        basic.pause(200)
+
+        //============================
+        // CONNECT SERVER
+        //============================
+
         if (!esp8266.sendCommand(
             "AT+CIPSTART=\"" + proto + "\",\"" + serverHost + "\"," + port,
             "OK",
@@ -81,32 +86,47 @@ namespace firebase {
             return ""
         }
 
+        basic.pause(300)
+
+        //============================
+        // REQUEST
+        //============================
+
         let request = "GET " + url + " HTTP/1.1\r\n"
         request += "Host: " + serverHost + "\r\n"
         request += "Connection: close\r\n\r\n"
 
-        // Kirim panjang data
-        if (!esp8266.sendCommand(
-            "AT+CIPSEND=" + request.length,
-            ">",
-            3000
-        )) {
+        //============================
+        // SEND LENGTH
+        //============================
 
-            esp8266.sendCommand("AT+CIPCLOSE", "OK", 1000)
-            return ""
-        }
+        esp8266.sendCommand("AT+CIPSEND=" + request.length)
 
-        // Kirim request
+        basic.pause(500)
+
+        //============================
+        // SEND REQUEST
+        //============================
+
         esp8266.sendCommand(request)
 
-        // Tunggu SEND OK
-        if (esp8266.getResponse("SEND OK", 5000) == "") {
+        //============================
+        // WAIT SEND OK
+        //============================
+
+        let sendResult = esp8266.getResponse("SEND OK", 5000)
+
+        if (sendResult == "") {
 
             esp8266.sendCommand("AT+CIPCLOSE", "OK", 1000)
+
             return ""
         }
 
-        // Ambil response lengkap
+        //============================
+        // GET RESPONSE
+        //============================
+
         let response = esp8266.getResponse("CLOSED", 8000)
 
         esp8266.sendCommand("AT+CIPCLOSE", "OK", 1000)
@@ -115,7 +135,7 @@ namespace firebase {
     }
 
     //============================
-    // AMBIL BODY HTTP
+    // GET BODY HTTP
     //============================
     function getBody(response: string): string {
 
@@ -126,6 +146,9 @@ namespace firebase {
         if (index >= 0) {
 
             body = response.substr(index + 4)
+
+            body = body.replace("\r", "")
+            body = body.replace("\n", "")
             body = body.trim()
         }
 
@@ -142,14 +165,14 @@ namespace firebase {
         uploadSuccess = false
 
         let data = name + ":" + value
+
         let safeData = esp8266.formatUrl(data)
 
         let url = serverPath + "?data=" + safeData
 
         let response = httpGet(url)
 
-        // Validasi response
-        if (response.indexOf("200 OK") >= 0) {
+        if (response != "") {
 
             uploadSuccess = true
         }
@@ -165,14 +188,14 @@ namespace firebase {
         uploadSuccess = false
 
         let data = name + ":" + value
+
         let safeData = esp8266.formatUrl(data)
 
         let url = serverPath + "?data=" + safeData
 
         let response = httpGet(url)
 
-        // Validasi response
-        if (response.indexOf("200 OK") >= 0) {
+        if (response != "") {
 
             uploadSuccess = true
         }
@@ -189,30 +212,23 @@ namespace firebase {
 
         let response = httpGet(url)
 
-        // Jika gagal koneksi
+        // gagal koneksi
         if (response == "") {
+
             return -1
         }
 
-        // Pastikan HTTP valid
-        if (response.indexOf("200 OK") < 0) {
-            return -1
-        }
-
-        // Ambil body asli
+        // ambil body HTTP
         let body = getBody(response)
 
-        // Bersihkan karakter aneh
-        body = body.replace("\r", "")
-        body = body.replace("\n", "")
-        body = body.trim()
-
-        // Parsing relay
+        // parsing relay
         if (body == "1") {
+
             return 1
         }
 
         if (body == "0") {
+
             return 0
         }
 
