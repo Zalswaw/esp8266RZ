@@ -1,4 +1,3 @@
-```typescript id="nxtb5p"
 let serverHost = ""
 let serverPath = "/iot.php"
 let useSSL = false
@@ -247,4 +246,3 @@ namespace firebase {
         return -1
     }
 }
-```
