@@ -1,3 +1,4 @@
+```typescript id="0zhzmx"
 let serverHost = ""
 let serverPath = "/iot.php"
 let useSSL = false
@@ -26,6 +27,7 @@ namespace firebase {
     //% subcategory="Firebase"
     //% block="Use SSL %ssl"
     export function setUseSSL(ssl: boolean) {
+
         useSSL = ssl
     }
 
@@ -37,6 +39,7 @@ namespace firebase {
     export function setPath(path: string) {
 
         if (path.charAt(0) != "/") {
+
             path = "/" + path
         }
 
@@ -49,6 +52,7 @@ namespace firebase {
     //% subcategory="Firebase"
     //% block="Upload success"
     export function isSuccess(): boolean {
+
         return uploadSuccess
     }
 
@@ -58,17 +62,22 @@ namespace firebase {
     function httpGet(url: string): string {
 
         if (!esp8266.isWifiConnected()) {
+
             return ""
         }
 
         if (serverHost == "") {
+
             return ""
         }
 
         let port = useSSL ? 443 : 80
         let proto = useSSL ? "SSL" : "TCP"
 
-        // Tutup koneksi sebelumnya
+        //============================
+        // TUTUP KONEKSI LAMA
+        //============================
+
         esp8266.sendCommand("AT+CIPCLOSE", "OK", 1000)
 
         basic.pause(200)
@@ -89,7 +98,7 @@ namespace firebase {
         basic.pause(300)
 
         //============================
-        // REQUEST
+        // REQUEST HTTP
         //============================
 
         let request = "GET " + url + " HTTP/1.1\r\n"
@@ -146,11 +155,15 @@ namespace firebase {
         if (index >= 0) {
 
             body = response.substr(index + 4)
-
-            body = body.replace("\r", "")
-            body = body.replace("\n", "")
-            body = body.trim()
         }
+        else {
+
+            body = response
+        }
+
+        body = body.replace("\r", "")
+        body = body.replace("\n", "")
+        body = body.trim()
 
         return body
     }
@@ -218,16 +231,19 @@ namespace firebase {
             return -1
         }
 
-        // ambil body HTTP
+        // ambil body HTTP saja
         let body = getBody(response)
 
-        // parsing relay
-        if (body == "1") {
+        //============================
+        // CEK BODY
+        //============================
+
+        if (body.indexOf("1") >= 0) {
 
             return 1
         }
 
-        if (body == "0") {
+        if (body.indexOf("0") >= 0) {
 
             return 0
         }
@@ -235,3 +251,4 @@ namespace firebase {
         return -1
     }
 }
+```
